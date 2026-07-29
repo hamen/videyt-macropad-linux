@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+# macropad-audio — control mic/speaker volume+mute and show a clear notification.
+# Used by the XFCE shortcuts bound to the macropad knobs (USB 1189:8840).
+# Actions: mic-up | mic-down | mic-mute | spk-up | spk-down | spk-mute
+set -euo pipefail
+export XDG_RUNTIME_DIR="/run/user/$(id -u)"
+
+act="${1:-}"
+case "$act" in
+  mic-up|mic-down|mic-mute) id='@DEFAULT_AUDIO_SOURCE@'; kind=mic; label='Microphone'; emoji='🎤' ;;
+  spk-up|spk-down|spk-mute) id='@DEFAULT_AUDIO_SINK@';   kind=spk; label='Speakers';   emoji='🔊' ;;
+  *) echo "usage: macropad-audio {mic-up|mic-down|mic-mute|spk-up|spk-down|spk-mute}" >&2; exit 2 ;;
+esac
+
+case "$act" in
+  *-up)   wpctl set-volume -l 1.0 "$id" 5%+ ;;
+  *-down) wpctl set-volume "$id" 5%- ;;
+  *-mute) wpctl set-mute "$id" toggle ;;
+esac
+
+out="$(wpctl get-volume "$id")"                 # e.g. "Volume: 0.75" or "Volume: 0.75 [MUTED]"
+vol="$(awk '{print $2}' <<<"$out")"
+pct="$(awk -v v="$vol" 'BEGIN{printf "%d", v*100+0.5}')"
+muted=no; grep -q 'MUTED' <<<"$out" && muted=yes
+
+if [ "$muted" = yes ]; then
+  body='MUTED'; val=0
+  [ "$kind" = mic ] && icon='microphone-sensitivity-muted' || icon='audio-volume-muted'
+else
+  body="${pct}%"; val="$pct"
+  [ "$kind" = mic ] && icon='audio-input-microphone' || icon='audio-volume-high'
+fi
+
+notify-send -a 'Macropad' -i "$icon" \
+  -h "int:value:${val}" \
+  -h 'string:x-canonical-private-synchronous:macropad-audio' \
+  "${emoji} ${label}" "$body"
