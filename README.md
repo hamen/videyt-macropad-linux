@@ -28,6 +28,16 @@ Each action shows a single notification like `🎤 Microphone 75%` or
 
 ---
 
+## Hardware
+
+Any pad that enumerates as USB `1189:8840` works. This is the exact unit I used:
+
+- 🛒 **[Mini macropad — 15 keys + 2 knobs](https://amzn.to/3SW6Hrf)**
+
+<sub>That's an Amazon affiliate link — buying through it supports this project at no extra cost to you.</sub>
+
+---
+
 ## Quick start
 
 Requirements: Linux, [Rust/cargo](https://rustup.rs) (to build the flashing
