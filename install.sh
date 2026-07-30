@@ -63,7 +63,7 @@ command -v xdotool >/dev/null 2>&1 || warn "xdotool not found — the agent macr
 if command -v xfconf-query >/dev/null 2>&1; then
   log "Binding knob keysyms to macropad-audio (XFCE)…"
   for ks in "${!SHORTCUTS[@]}"; do
-    cmd="$BIN_DIR/macropad-audio ${SHORTCUTS[$ks]}"
+    cmd="\"$BIN_DIR/macropad-audio\" ${SHORTCUTS[$ks]}"
     if xfconf-query -c xfce4-keyboard-shortcuts -p "/commands/custom/$ks" >/dev/null 2>&1; then
       xfconf-query -c xfce4-keyboard-shortcuts -p "/commands/custom/$ks" -s "$cmd"
     else
@@ -72,16 +72,24 @@ if command -v xfconf-query >/dev/null 2>&1; then
     printf '    %-14s -> %s\n' "$ks" "${SHORTCUTS[$ks]}"
   done
 
-  log "Binding agent-macro chords to macropad-say (XFCE)…"
-  for chord in "${!MACROS[@]}"; do
-    cmd="$BIN_DIR/macropad-say ${MACROS[$chord]}"
-    if xfconf-query -c xfce4-keyboard-shortcuts -p "/commands/custom/$chord" >/dev/null 2>&1; then
-      xfconf-query -c xfce4-keyboard-shortcuts -p "/commands/custom/$chord" -s "$cmd"
-    else
-      xfconf-query -c xfce4-keyboard-shortcuts -p "/commands/custom/$chord" -n -t string -s "$cmd"
-    fi
-    printf '    %-22s -> macropad-say %s\n' "$chord" "${MACROS[$chord]}"
-  done
+  # The default macro keysyms (XF86TouchpadToggle/On/Off) are inert only on a
+  # machine with no touchpad. On a laptop they would fight the touchpad, so skip
+  # binding and let the user pick their own spare keysyms in MACROS.
+  if command -v xinput >/dev/null 2>&1 && xinput list 2>/dev/null | grep -qi touchpad \
+     && [ -n "${MACROS[XF86TouchpadToggle]:-}" ]; then
+    warn "Touchpad detected — skipping the default touchpad-keysym macros. Edit MACROS in install.sh with your own spare keysyms, then re-run."
+  else
+    log "Binding agent-macro keys to macropad-say (XFCE)…"
+    for ks in "${!MACROS[@]}"; do
+      cmd="\"$BIN_DIR/macropad-say\" ${MACROS[$ks]}"
+      if xfconf-query -c xfce4-keyboard-shortcuts -p "/commands/custom/$ks" >/dev/null 2>&1; then
+        xfconf-query -c xfce4-keyboard-shortcuts -p "/commands/custom/$ks" -s "$cmd"
+      else
+        xfconf-query -c xfce4-keyboard-shortcuts -p "/commands/custom/$ks" -n -t string -s "$cmd"
+      fi
+      printf '    %-22s -> macropad-say %s\n' "$ks" "${MACROS[$ks]}"
+    done
+  fi
 
   # 4. Silence the panel's own volume OSD so it doesn't duplicate ours -------
   plugin=""
