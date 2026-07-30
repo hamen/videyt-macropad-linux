@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# install.sh — configure a "videyt" mini macropad (USB 1189:8840) as a
-# speaker + microphone controller on Linux, with clean labelled notifications.
+# install.sh — configure a "videyt" mini macropad (USB 1189:8840) on Linux:
+# speaker + microphone volume knobs (clean labelled notifications) and a row of
+# one-press agent macros.
 #
 # Idempotent: safe to re-run. Everything is path-configurable; nothing is
 # hard-coded to a particular home directory or machine.
@@ -28,6 +29,14 @@ declare -A SHORTCUTS=(
   [XF86Launch9]="spk-up"    # f18
 )
 
+# Rare chord -> macropad-say phrase (second row of keys). The chords are emitted
+# by the device (see macropad.yaml) and are unlikely to collide with anything.
+declare -A MACROS=(
+  ["<Primary><Alt><Shift>g"]="go"
+  ["<Primary><Alt><Shift>m"]="merge"
+  ["<Primary><Alt><Shift>s"]="stop"
+)
+
 log() { printf '\033[1;34m==>\033[0m %s\n' "$*"; }
 warn() { printf '\033[1;33m[!]\033[0m %s\n' "$*"; }
 
@@ -43,6 +52,7 @@ TOOL="$(command -v ch57x-keyboard-tool)"
 log "Installing macropad-audio to $BIN_DIR"
 mkdir -p "$BIN_DIR"
 install -m 0755 "$REPO_DIR/bin/macropad-audio" "$BIN_DIR/macropad-audio"
+install -m 0755 "$REPO_DIR/bin/macropad-say" "$BIN_DIR/macropad-say"
 case ":$PATH:" in *":$BIN_DIR:"*) : ;; *) warn "$BIN_DIR is not on your PATH — add it to your shell profile" ;; esac
 
 # 3. Desktop shortcuts (XFCE) ----------------------------------------------
@@ -58,6 +68,17 @@ if command -v xfconf-query >/dev/null 2>&1; then
     printf '    %-14s -> %s\n' "$ks" "${SHORTCUTS[$ks]}"
   done
 
+  log "Binding agent-macro chords to macropad-say (XFCE)…"
+  for chord in "${!MACROS[@]}"; do
+    cmd="$BIN_DIR/macropad-say ${MACROS[$chord]}"
+    if xfconf-query -c xfce4-keyboard-shortcuts -p "/commands/custom/$chord" >/dev/null 2>&1; then
+      xfconf-query -c xfce4-keyboard-shortcuts -p "/commands/custom/$chord" -s "$cmd"
+    else
+      xfconf-query -c xfce4-keyboard-shortcuts -p "/commands/custom/$chord" -n -t string -s "$cmd"
+    fi
+    printf '    %-22s -> macropad-say %s\n' "$chord" "${MACROS[$chord]}"
+  done
+
   # 4. Silence the panel's own volume OSD so it doesn't duplicate ours -------
   plugin=""
   for p in $(xfconf-query -c xfce4-panel -p /plugins -l 2>/dev/null | grep -E '/plugins/plugin-[0-9]+$'); do
@@ -69,8 +90,9 @@ if command -v xfconf-query >/dev/null 2>&1; then
       || xfconf-query -c xfce4-panel -p "$plugin/show-notifications" -s false
   fi
 else
-  warn "xfconf-query not found (not XFCE?). Bind these keysyms yourself to the commands:"
-  for ks in "${!SHORTCUTS[@]}"; do printf '    %-14s -> %s macropad-audio %s\n' "$ks" "$BIN_DIR" "${SHORTCUTS[$ks]}"; done
+  warn "xfconf-query not found (not XFCE?). Bind these yourself to the commands:"
+  for ks in "${!SHORTCUTS[@]}"; do printf '    %-22s -> %s/macropad-audio %s\n' "$ks" "$BIN_DIR" "${SHORTCUTS[$ks]}"; done
+  for chord in "${!MACROS[@]}"; do printf '    %-22s -> %s/macropad-say %s\n' "$chord" "$BIN_DIR" "${MACROS[$chord]}"; done
 fi
 
 # 5. Upload the key map to the device --------------------------------------
@@ -79,4 +101,4 @@ log "Validating config"
 log "Uploading to the macropad (needs root for USB access)…"
 sudo "$TOOL" upload < "$CONFIG"
 
-log "Done. Turn a knob — you should see a labelled notification."
+log "Done. Turn a knob for a labelled notification; press a second-row key to type a phrase."

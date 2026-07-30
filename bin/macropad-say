@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+# macropad-say <name> — types a canned phrase where the cursor is.
+# Bound to the rare chords the macropad's second row emits (see macropad.yaml);
+# a desktop shortcut runs `macropad-say go|merge|stop`.
+#
+# Edit the phrases here — no device reflash needed.
+# To auto-send, add `xdotool key --clearmodifiers Return` after the type line.
+set -euo pipefail
+
+case "${1:-}" in
+  go)    text="go ahead, continue" ;;
+  merge) text="merge the pull request, please" ;;
+  stop)  text="stop" ;;
+  *) echo "usage: macropad-say go|merge|stop" >&2; exit 1 ;;
+esac
+
+# Let the trigger chord (ctrl+alt+shift+<key>) fully release before typing,
+# otherwise the first character collides with the still-held keys and is dropped.
+sleep 0.12
+xdotool type --clearmodifiers -- "$text"

@@ -5,7 +5,7 @@ Turn a cheap "Mini Keyboard" macropad (the ones whose manual only ships a
 on Linux** — with clean, labelled desktop notifications and **no background
 daemon**.
 
-This is the pad sold under a dozen brands: **15 keys + 2 rotary knobs**, showing
+This is the pad sold under a dozen brands: **12 keys + 2 rotary knobs**, showing
 up on USB as:
 
 ```
@@ -32,7 +32,7 @@ Each action shows a single notification like `🎤 Microphone 75%` or
 
 Any pad that enumerates as USB `1189:8840` works. This is the exact unit I used:
 
-- 🛒 **[Mini macropad — 15 keys + 2 knobs](https://amzn.to/3SW6Hrf)**
+- 🛒 **[Mini macropad — 12 keys + 2 knobs](https://amzn.to/3SW6Hrf)**
 
 <sub>That's an Amazon affiliate link — buying through it supports this project at no extra cost to you.</sub>
 
@@ -55,8 +55,8 @@ Then turn a knob. That's it.
 `install.sh` is idempotent — re-run it anytime. It:
 
 1. installs `ch57x-keyboard-tool` (via cargo) if missing,
-2. installs the `macropad-audio` helper to `~/.local/bin` (override with `BIN_DIR=`),
-3. binds the knob keysyms to that helper via XFCE keyboard shortcuts,
+2. installs the `macropad-audio` and `macropad-say` helpers to `~/.local/bin` (override with `BIN_DIR=`),
+3. binds the knob keysyms and the agent-macro chords to those helpers via XFCE keyboard shortcuts,
 4. silences the panel's built-in volume popup so it doesn't duplicate ours,
 5. uploads `macropad.yaml` to the device (asks for `sudo` — USB write needs root).
 
@@ -140,9 +140,44 @@ handler, and bind those. That's what this repo does.
 
 ---
 
+## The 12 keys: dictate, paste, send — and one-press agent macros
+
+The pad has 12 keys (4 rows × 3 columns). This repo's `macropad.yaml` uses the
+top two physical rows; the rest are free placeholders.
+
+- **Row 1 — dictate → paste → send:** a push-to-talk key (for a hold-to-talk
+  speech-to-text), `Ctrl+Shift+V` (paste), and `Enter` (send).
+- **Row 2 — agent macros:** three keys that type the phrases you send coding
+  agents all day. `install.sh` binds them via `bin/macropad-say`:
+
+```
+key     types
+──────────────────────────────────────────
+left    go ahead, continue
+middle  merge the pull request, please
+right   stop
+```
+
+The device can only emit HID key codes, so it can't type a whole phrase. Instead
+each key sends a rare chord (`Ctrl+Alt+Shift+G`/`M`/`S`), a desktop shortcut
+catches it, and `macropad-say` types the phrase with `xdotool`. Edit the phrases
+in `bin/macropad-say` — no reflash needed.
+
+> **Gotcha:** type the phrase *after a short delay*, or the first character
+> collides with the still-held chord keys and gets dropped (`o ahead`, `erge…`,
+> `top`). `macropad-say` sleeps 120 ms before typing to avoid this.
+
+**Decoding the key positions.** The firmware scrambles the physical layout — the
+top-left key is **not** row 0, column 0 in `macropad.yaml`. Decode your unit by
+flashing 12 distinct letters, pressing the keys in physical order, and noting
+which letter each produces; the comment block at the top of `macropad.yaml` shows
+the map for this unit.
+
+---
+
 ## Customization
 
-**Remap the 15 keys or the knobs:** edit `macropad.yaml` and re-run
+**Remap the 12 keys or the knobs:** edit `macropad.yaml` and re-run
 `./install.sh` (or `sudo ch57x-keyboard-tool upload < macropad.yaml`).
 List valid key names with `ch57x-keyboard-tool show-keys`.
 
