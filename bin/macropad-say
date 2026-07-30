@@ -1,14 +1,12 @@
 #!/usr/bin/env bash
 # macropad-say <name> — types a canned phrase where the cursor is.
-# Bound to the rare chords the macropad's second row emits (see macropad.yaml);
-# a desktop shortcut runs `macropad-say go|merge|stop`.
+# Bound to single spare keysyms the macropad's second row emits (see
+# macropad.yaml). No modifiers are involved, so nothing can latch/stick.
 #
-# Requires xdotool (X11 / Xwayland). On native Wayland, swap it for wtype or
-# ydotool.
+# Requires xdotool (X11 / Xwayland). On native Wayland, swap it for wtype/ydotool.
 #
-# To change the phrases: edit them below and re-run ./install.sh (or edit the
-# installed copy directly — the desktop shortcut runs $BIN_DIR/macropad-say, not
-# this repo copy). No device reflash is needed either way.
+# To change the phrases: edit them below and re-run ./install.sh (the shortcut
+# runs the installed copy at $BIN_DIR/macropad-say). No device reflash needed.
 set -euo pipefail
 
 case "${1:-}" in
@@ -20,10 +18,8 @@ esac
 
 command -v xdotool >/dev/null 2>&1 || { echo "macropad-say: xdotool not found (needed to type)" >&2; exit 1; }
 
-# The trigger chord (Ctrl+Alt+Shift+<key>) may still be held when this runs, and
-# a held modifier drops/corrupts the first typed characters. Force the modifiers
-# up and let the release propagate before typing — a fixed sleep alone is not
-# enough if the key is held longer than the delay.
-xdotool keyup Control_L Control_R Alt_L Alt_R Shift_L Shift_R 2>/dev/null || true
-sleep 0.05
+# The trigger key is still settling when the shortcut fires; without a brief pause
+# xdotool's first characters get eaten. Pure timing — there are no modifiers to
+# release here (that is deliberate; see macropad.yaml).
+sleep 0.2
 xdotool type --clearmodifiers -- "$text"

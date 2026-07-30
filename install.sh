@@ -29,12 +29,15 @@ declare -A SHORTCUTS=(
   [XF86Launch9]="spk-up"    # f18
 )
 
-# Rare chord -> macropad-say phrase (second row of keys). The chords are emitted
-# by the device (see macropad.yaml) and are unlikely to collide with anything.
+# Single spare keysym -> macropad-say phrase (second row of keys). Use a plain
+# keysym, NEVER a modifier chord: a chord (Ctrl+Alt+Shift+key) can latch the
+# modifiers stuck at the X level and wedge the whole desktop. This machine has no
+# touchpad, so XF86TouchpadToggle/On/Off are inert and free; if you have a
+# touchpad, pick three other spare, side-effect-free keysyms.
 declare -A MACROS=(
-  ["<Primary><Alt><Shift>g"]="go"
-  ["<Primary><Alt><Shift>m"]="merge"
-  ["<Primary><Alt><Shift>s"]="stop"
+  [XF86TouchpadToggle]="go"
+  [XF86TouchpadOn]="merge"
+  [XF86TouchpadOff]="stop"
 )
 
 log() { printf '\033[1;34m==>\033[0m %s\n' "$*"; }

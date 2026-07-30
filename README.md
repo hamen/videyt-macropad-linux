@@ -160,14 +160,22 @@ right   stop
 ```
 
 The device can only emit HID key codes, so it can't type a whole phrase. Instead
-each key sends a rare chord (`Ctrl+Alt+Shift+G`/`M`/`S`), a desktop shortcut
-catches it, and `macropad-say` types the phrase with `xdotool`. To change the
-wording, edit `bin/macropad-say` and re-run `./install.sh` (the shortcut runs the
-*installed* copy) — no device reflash needed.
+each key sends a **single spare keysym**, a desktop shortcut catches it, and
+`macropad-say` types the phrase with `xdotool`. To change the wording, edit
+`bin/macropad-say` and re-run `./install.sh` (the shortcut runs the *installed*
+copy) — no device reflash needed.
 
-> **Gotcha:** type the phrase *after a short delay*, or the first character
-> collides with the still-held chord keys and gets dropped (`o ahead`, `erge…`,
-> `top`). `macropad-say` sleeps 120 ms before typing to avoid this.
+> **Learn from my mistake — never use a modifier chord here.** My first version
+> had each key send `Ctrl+Alt+Shift+<letter>`. Press it once and the modifiers
+> latched **stuck** at the X level: from then on every keystroke was a chord,
+> `F1` opened a browser, windows vanished, and the real keyboard's shortcuts
+> died. A single plain keysym can't do that — the knobs use exactly this pattern
+> and never misbehaved. Because this machine has no touchpad,
+> `XF86TouchpadToggle`/`On`/`Off` are inert, unbound keysyms that make good macro
+> triggers; on a laptop, pick three other spare keys.
+>
+> One timing note: `macropad-say` sleeps 200 ms before typing, or the shortcut
+> fires before the key settles and `xdotool` drops the first characters.
 
 **Decoding the key positions.** The firmware scrambles the physical layout — the
 top-left key is **not** row 0, column 0 in `macropad.yaml`. Decode your unit by
@@ -197,10 +205,10 @@ The device flashing and the `macropad-audio` helper are desktop-agnostic. Only
 step 3 (binding keysyms) and step 4 (silencing the panel popup) are XFCE-specific.
 
 - **GNOME/KDE/etc.:** bind each knob keysym in the table above to the matching
-  `~/.local/bin/macropad-audio …` command, and the macro chords
-  (`Ctrl+Alt+Shift+G`/`M`/`S`) to `~/.local/bin/macropad-say go|merge|stop`, using
-  your desktop's keyboard settings. Disable your panel's own volume OSD if it
-  duplicates the notification.
+  `~/.local/bin/macropad-audio …` command, and the macro keysyms
+  (`XF86TouchpadToggle`/`On`/`Off`, or your own spare keys) to
+  `~/.local/bin/macropad-say go|merge|stop`, using your desktop's keyboard
+  settings. Disable your panel's own volume OSD if it duplicates the notification.
 - **Wayland:** `wpctl` and `notify-send` work the same; use your compositor's
   shortcut mechanism (e.g. `hyprland` binds) instead of XFCE. Note that
   `macropad-say` uses `xdotool`, which only types into X11/Xwayland windows — for

@@ -23,11 +23,14 @@
 #     (0,3) Pause          push-to-talk for a hold-to-talk speech-to-text
 #     (1,2) Ctrl+Shift+V   paste (terminal / paste-as-plain-text)
 #     (2,1) Enter          send
-#   Row 2 = one-press agent macros (rare chords caught by desktop shortcuts ->
-#     macropad-say, which types the phrase; see install.sh + bin/macropad-say):
-#     (0,2) Ctrl+Alt+Shift+G   "go ahead, continue"
-#     (1,1) Ctrl+Alt+Shift+M   "merge the pull request, please"
-#     (2,0) Ctrl+Alt+Shift+S   "stop"
+#   Row 2 = one-press agent macros. Each key sends a SINGLE spare keysym (never a
+#     modifier chord — a chord can latch Ctrl/Alt/Shift stuck at the X level and
+#     wedge your whole desktop). A shortcut runs `macropad-say` (see install.sh).
+#     This machine has no touchpad, so XF86TouchpadToggle/On/Off (f21/f22/f23) are
+#     inert and free; if you HAVE a touchpad, pick three other spare keysyms.
+#     (0,2) f21  XF86TouchpadToggle  -> go
+#     (1,1) f22  XF86TouchpadOn      -> merge
+#     (2,0) f23  XF86TouchpadOff     -> stop
 #   Rows 3-4 = free placeholder letters; remap as you like.
 orientation: normal
 rows: 3
@@ -36,9 +39,9 @@ knobs: 2
 
 layers:
   - buttons:
-      - ["a", "b", "ctrl-alt-shift-g", "<72>", "e"]
-      - ["f", "ctrl-alt-shift-m", "ctrl-shift-v", "i", "j"]
-      - ["ctrl-alt-shift-s", "enter", "m", "n", "o"]
+      - ["a", "b", "f21", "<72>", "e"]
+      - ["f", "f22", "ctrl-shift-v", "i", "j"]
+      - ["f23", "enter", "m", "n", "o"]
     knobs:
       # LEFT knob -> SPEAKERS  (turn = volume down/up, press = mute)
       - ccw: "f17"    # spk-down
