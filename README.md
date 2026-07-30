@@ -5,7 +5,7 @@ Turn a cheap "Mini Keyboard" macropad (the ones whose manual only ships a
 on Linux** — with clean, labelled desktop notifications and **no background
 daemon**.
 
-This is the pad sold under a dozen brands: **15 keys + 2 rotary knobs**, showing
+This is the pad sold under a dozen brands: **12 keys + 2 rotary knobs**, showing
 up on USB as:
 
 ```
@@ -32,7 +32,7 @@ Each action shows a single notification like `🎤 Microphone 75%` or
 
 Any pad that enumerates as USB `1189:8840` works. This is the exact unit I used:
 
-- 🛒 **[Mini macropad — 15 keys + 2 knobs](https://amzn.to/3SW6Hrf)**
+- 🛒 **[Mini macropad — 12 keys + 2 knobs](https://amzn.to/3SW6Hrf)**
 
 <sub>That's an Amazon affiliate link — buying through it supports this project at no extra cost to you.</sub>
 
@@ -41,8 +41,9 @@ Any pad that enumerates as USB `1189:8840` works. This is the exact unit I used:
 ## Quick start
 
 Requirements: Linux, [Rust/cargo](https://rustup.rs) (to build the flashing
-tool), PipeWire with `wpctl` (WirePlumber), and `notify-send`. Desktop shortcut
-wiring is automated for **XFCE**; for GNOME/KDE see [Other desktops](#other-desktops).
+tool), PipeWire with `wpctl` (WirePlumber), `notify-send`, and `xdotool` (for the
+agent macros; X11/Xwayland). Desktop shortcut wiring is automated for **XFCE**;
+for GNOME/KDE see [Other desktops](#other-desktops).
 
 ```bash
 git clone <this-repo> videyt-macropad-linux
@@ -55,8 +56,8 @@ Then turn a knob. That's it.
 `install.sh` is idempotent — re-run it anytime. It:
 
 1. installs `ch57x-keyboard-tool` (via cargo) if missing,
-2. installs the `macropad-audio` helper to `~/.local/bin` (override with `BIN_DIR=`),
-3. binds the knob keysyms to that helper via XFCE keyboard shortcuts,
+2. installs the `macropad-audio` and `macropad-say` helpers to `~/.local/bin` (override with `BIN_DIR=`),
+3. binds the knob keysyms and the agent-macro chords to those helpers via XFCE keyboard shortcuts,
 4. silences the panel's built-in volume popup so it doesn't duplicate ours,
 5. uploads `macropad.yaml` to the device (asks for `sudo` — USB write needs root).
 
@@ -140,9 +141,53 @@ handler, and bind those. That's what this repo does.
 
 ---
 
+## The 12 keys: dictate, paste, send — and one-press agent macros
+
+The pad has 12 keys (4 rows × 3 columns). This repo's `macropad.yaml` uses the
+top two physical rows; the rest are free placeholders.
+
+- **Row 1 — dictate → paste → send:** a push-to-talk key (for a hold-to-talk
+  speech-to-text), `Ctrl+Shift+V` (paste), and `Enter` (send).
+- **Row 2 — agent macros:** three keys that type the phrases you send coding
+  agents all day. `install.sh` binds them via `bin/macropad-say`:
+
+```
+key     types
+──────────────────────────────────────────
+left    go ahead, continue
+middle  merge the pull request, please
+right   stop
+```
+
+The device can only emit HID key codes, so it can't type a whole phrase. Instead
+each key sends a **single spare keysym**, a desktop shortcut catches it, and
+`macropad-say` types the phrase with `xdotool`. To change the wording, edit
+`bin/macropad-say` and re-run `./install.sh` (the shortcut runs the *installed*
+copy) — no device reflash needed.
+
+> **Learn from my mistake — never use a modifier chord here.** My first version
+> had each key send `Ctrl+Alt+Shift+<letter>`. Press it once and the modifiers
+> latched **stuck** at the X level: from then on every keystroke was a chord,
+> `F1` opened a browser, windows vanished, and the real keyboard's shortcuts
+> died. A single plain keysym can't do that — the knobs use exactly this pattern
+> and never misbehaved. Because this machine has no touchpad,
+> `XF86TouchpadToggle`/`On`/`Off` are inert, unbound keysyms that make good macro
+> triggers; on a laptop, pick three other spare keys.
+>
+> One timing note: `macropad-say` sleeps 200 ms before typing, or the shortcut
+> fires before the key settles and `xdotool` drops the first characters.
+
+**Decoding the key positions.** The firmware scrambles the physical layout — the
+top-left key is **not** row 0, column 0 in `macropad.yaml`. Decode your unit by
+flashing 12 distinct letters, pressing the keys in physical order, and noting
+which letter each produces; the comment block at the top of `macropad.yaml` shows
+the map for this unit.
+
+---
+
 ## Customization
 
-**Remap the 15 keys or the knobs:** edit `macropad.yaml` and re-run
+**Remap the 12 keys or the knobs:** edit `macropad.yaml` and re-run
 `./install.sh` (or `sudo ch57x-keyboard-tool upload < macropad.yaml`).
 List valid key names with `ch57x-keyboard-tool show-keys`.
 
@@ -159,11 +204,15 @@ upload replaces the whole map. Keep `macropad.yaml` as your source of truth.
 The device flashing and the `macropad-audio` helper are desktop-agnostic. Only
 step 3 (binding keysyms) and step 4 (silencing the panel popup) are XFCE-specific.
 
-- **GNOME/KDE/etc.:** bind each keysym in the table above to the matching
-  `~/.local/bin/macropad-audio …` command using your desktop's keyboard settings,
-  and disable your panel's own volume OSD if it duplicates the notification.
+- **GNOME/KDE/etc.:** bind each knob keysym in the table above to the matching
+  `~/.local/bin/macropad-audio …` command, and the macro keysyms
+  (`XF86TouchpadToggle`/`On`/`Off`, or your own spare keys) to
+  `~/.local/bin/macropad-say go|merge|stop`, using your desktop's keyboard
+  settings. Disable your panel's own volume OSD if it duplicates the notification.
 - **Wayland:** `wpctl` and `notify-send` work the same; use your compositor's
-  shortcut mechanism (e.g. `hyprland` binds) instead of XFCE.
+  shortcut mechanism (e.g. `hyprland` binds) instead of XFCE. Note that
+  `macropad-say` uses `xdotool`, which only types into X11/Xwayland windows — for
+  native Wayland apps, swap it for `wtype` or `ydotool`.
 
 ---
 
