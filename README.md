@@ -41,8 +41,9 @@ Any pad that enumerates as USB `1189:8840` works. This is the exact unit I used:
 ## Quick start
 
 Requirements: Linux, [Rust/cargo](https://rustup.rs) (to build the flashing
-tool), PipeWire with `wpctl` (WirePlumber), and `notify-send`. Desktop shortcut
-wiring is automated for **XFCE**; for GNOME/KDE see [Other desktops](#other-desktops).
+tool), PipeWire with `wpctl` (WirePlumber), `notify-send`, and `xdotool` (for the
+agent macros; X11/Xwayland). Desktop shortcut wiring is automated for **XFCE**;
+for GNOME/KDE see [Other desktops](#other-desktops).
 
 ```bash
 git clone <this-repo> videyt-macropad-linux
@@ -160,8 +161,9 @@ right   stop
 
 The device can only emit HID key codes, so it can't type a whole phrase. Instead
 each key sends a rare chord (`Ctrl+Alt+Shift+G`/`M`/`S`), a desktop shortcut
-catches it, and `macropad-say` types the phrase with `xdotool`. Edit the phrases
-in `bin/macropad-say` — no reflash needed.
+catches it, and `macropad-say` types the phrase with `xdotool`. To change the
+wording, edit `bin/macropad-say` and re-run `./install.sh` (the shortcut runs the
+*installed* copy) — no device reflash needed.
 
 > **Gotcha:** type the phrase *after a short delay*, or the first character
 > collides with the still-held chord keys and gets dropped (`o ahead`, `erge…`,
@@ -194,11 +196,15 @@ upload replaces the whole map. Keep `macropad.yaml` as your source of truth.
 The device flashing and the `macropad-audio` helper are desktop-agnostic. Only
 step 3 (binding keysyms) and step 4 (silencing the panel popup) are XFCE-specific.
 
-- **GNOME/KDE/etc.:** bind each keysym in the table above to the matching
-  `~/.local/bin/macropad-audio …` command using your desktop's keyboard settings,
-  and disable your panel's own volume OSD if it duplicates the notification.
+- **GNOME/KDE/etc.:** bind each knob keysym in the table above to the matching
+  `~/.local/bin/macropad-audio …` command, and the macro chords
+  (`Ctrl+Alt+Shift+G`/`M`/`S`) to `~/.local/bin/macropad-say go|merge|stop`, using
+  your desktop's keyboard settings. Disable your panel's own volume OSD if it
+  duplicates the notification.
 - **Wayland:** `wpctl` and `notify-send` work the same; use your compositor's
-  shortcut mechanism (e.g. `hyprland` binds) instead of XFCE.
+  shortcut mechanism (e.g. `hyprland` binds) instead of XFCE. Note that
+  `macropad-say` uses `xdotool`, which only types into X11/Xwayland windows — for
+  native Wayland apps, swap it for `wtype` or `ydotool`.
 
 ---
 

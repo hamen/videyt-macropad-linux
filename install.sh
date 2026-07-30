@@ -9,7 +9,7 @@
 # Usage:
 #   ./install.sh [path-to-config.yaml]     # default: ./macropad.yaml
 # Env overrides:
-#   BIN_DIR=~/.local/bin   # where macropad-audio is installed (must be on PATH)
+#   BIN_DIR=~/.local/bin   # where macropad-audio / macropad-say install (must be on PATH)
 set -euo pipefail
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -48,12 +48,13 @@ if ! command -v ch57x-keyboard-tool >/dev/null 2>&1; then
 fi
 TOOL="$(command -v ch57x-keyboard-tool)"
 
-# 2. macropad-audio helper --------------------------------------------------
-log "Installing macropad-audio to $BIN_DIR"
+# 2. helpers ----------------------------------------------------------------
+log "Installing helpers (macropad-audio, macropad-say) to $BIN_DIR"
 mkdir -p "$BIN_DIR"
 install -m 0755 "$REPO_DIR/bin/macropad-audio" "$BIN_DIR/macropad-audio"
 install -m 0755 "$REPO_DIR/bin/macropad-say" "$BIN_DIR/macropad-say"
 case ":$PATH:" in *":$BIN_DIR:"*) : ;; *) warn "$BIN_DIR is not on your PATH — add it to your shell profile" ;; esac
+command -v xdotool >/dev/null 2>&1 || warn "xdotool not found — the agent macros (macropad-say) need it on X11/Xwayland; on native Wayland use wtype/ydotool"
 
 # 3. Desktop shortcuts (XFCE) ----------------------------------------------
 if command -v xfconf-query >/dev/null 2>&1; then
