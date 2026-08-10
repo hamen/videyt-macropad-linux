@@ -32,6 +32,7 @@
 #     (1,1) f22  XF86TouchpadOn      -> merge
 #     (2,0) f23  XF86TouchpadOff     -> stop
 #   Rows 3-4 = free placeholder letters; remap as you like.
+#     (0,0) physical row 4 col 1: Shift+PrintScreen -> selection screenshot
 orientation: normal
 rows: 3
 columns: 5
@@ -39,7 +40,7 @@ knobs: 2
 
 layers:
   - buttons:
-      - ["a", "b", "f21", "<72>", "e"]
+      - ["shift-printscreen", "b", "f21", "<72>", "e"]
       - ["f", "f22", "ctrl-shift-v", "i", "j"]
       - ["f23", "enter", "m", "n", "o"]
     knobs:
