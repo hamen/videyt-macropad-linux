@@ -144,7 +144,7 @@ handler, and bind those. That's what this repo does.
 ## The 12 keys: dictate, paste, send — and one-press agent macros
 
 The pad has 12 keys (4 rows × 3 columns). This repo's `macropad.yaml` assigns
-rows 1, 2, and 4; row 3 is still free placeholders.
+rows 1, 2, and 4; row 3 is still free.
 
 - **Row 1 — dictate → paste → send:** a push-to-talk key (for a hold-to-talk
   speech-to-text), `Ctrl+Shift+V` (paste), and `Enter` (send).
