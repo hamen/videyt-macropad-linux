@@ -143,8 +143,8 @@ handler, and bind those. That's what this repo does.
 
 ## The 12 keys: dictate, paste, send — and one-press agent macros
 
-The pad has 12 keys (4 rows × 3 columns). This repo's `macropad.yaml` uses the
-top two physical rows; the rest are free placeholders.
+The pad has 12 keys (4 rows × 3 columns). This repo's `macropad.yaml` assigns
+rows 1, 2, and 4; row 3 is still free.
 
 - **Row 1 — dictate → paste → send:** a push-to-talk key (for a hold-to-talk
   speech-to-text), `Ctrl+Shift+V` (paste), and `Enter` (send).
@@ -176,6 +176,10 @@ copy) — no device reflash needed.
 >
 > One timing note: `macropad-say` sleeps 200 ms before typing, or the shortcut
 > fires before the key settles and `xdotool` drops the first characters.
+
+- **Row 4 — utility:** `Shift+PrintScreen` (selection screenshot), `Ctrl+V`
+  (paste), and `Enter` (send) — handy on a keyboard without a dedicated
+  `PrtScn` key. These rely on your desktop already binding those shortcuts.
 
 **Decoding the key positions.** The firmware scrambles the physical layout — the
 top-left key is **not** row 0, column 0 in `macropad.yaml`. Decode your unit by

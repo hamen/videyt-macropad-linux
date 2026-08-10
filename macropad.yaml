@@ -31,7 +31,11 @@
 #     (0,2) f21  XF86TouchpadToggle  -> go
 #     (1,1) f22  XF86TouchpadOn      -> merge
 #     (2,0) f23  XF86TouchpadOff     -> stop
-#   Rows 3-4 = free placeholder letters; remap as you like.
+#   Row 3 = free placeholder letters; remap as you like.
+#   Row 4 (physical) = utility row:
+#     (0,0) physical row 4 col 1: Shift+PrintScreen -> selection screenshot
+#     (0,4) physical row 4 col 2: Ctrl+V             -> paste
+#     (1,3) physical row 4 col 3: Enter              -> send
 orientation: normal
 rows: 3
 columns: 5
@@ -39,8 +43,8 @@ knobs: 2
 
 layers:
   - buttons:
-      - ["a", "b", "f21", "<72>", "e"]
-      - ["f", "f22", "ctrl-shift-v", "i", "j"]
+      - ["shift-printscreen", "b", "f21", "<72>", "ctrl-v"]
+      - ["f", "f22", "ctrl-shift-v", "enter", "j"]
       - ["f23", "enter", "m", "n", "o"]
     knobs:
       # LEFT knob -> SPEAKERS  (turn = volume down/up, press = mute)
