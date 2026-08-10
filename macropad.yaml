@@ -31,7 +31,7 @@
 #     (0,2) f21  XF86TouchpadToggle  -> go
 #     (1,1) f22  XF86TouchpadOn      -> merge
 #     (2,0) f23  XF86TouchpadOff     -> stop
-#   Rows 3-4 = free placeholder letters; remap as you like.
+#   Row 3 = free placeholder letters; remap as you like.
 #   Row 4 (physical) = utility row:
 #     (0,0) physical row 4 col 1: Shift+PrintScreen -> selection screenshot
 #     (0,4) physical row 4 col 2: Ctrl+V             -> paste
