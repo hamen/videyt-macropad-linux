@@ -169,6 +169,18 @@ above), and `F19`/`F24` carry no keysym at all, so nothing can bind them. It is
 reached with the raw HID code `<118>`; Linux maps that usage to `KEY_PROPS`,
 which Xorg presents as `SunProps`.
 
+**All four keysyms are "free" on my machine, not on yours** — that is a fact
+about a keymap and a desktop, not a property of the keys. Check before you trust
+any of them, `SunProps` included:
+
+```bash
+xmodmap -pke | grep -i props                              # exists? (nothing = unbindable)
+xfconf-query -c xfce4-keyboard-shortcuts -l | grep -i props   # already bound?
+```
+
+If a keysym is missing from the first command, nothing can bind it — pick
+another. If it shows up in the second, it already does something else.
+
 The device can only emit HID key codes, so it can't type a whole phrase. Instead
 each key sends a **single spare keysym**, a desktop shortcut catches it, and
 `macropad-say` types the phrase with `xdotool`. To change the wording, edit
@@ -183,7 +195,9 @@ copy) — no device reflash needed.
 > and never misbehaved. Because this machine has no touchpad,
 > `XF86TouchpadToggle`/`On`/`Off` are inert, unbound keysyms that make good macro
 > triggers; on a laptop, pick your own spare keys for those three (`install.sh`
-> skips them there, and binds the rest).
+> skips them there, and binds the rest). Give `SunProps` the same scrutiny — it
+> is unbound *here*, which is not a promise about your machine. Verify all four
+> with the two commands above.
 >
 > One timing note: `macropad-say` sleeps 200 ms before typing, or the shortcut
 > fires before the key settles and `xdotool` drops the first characters.
