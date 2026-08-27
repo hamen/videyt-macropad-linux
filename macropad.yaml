@@ -23,15 +23,23 @@
 #     (0,3) Pause          push-to-talk for a hold-to-talk speech-to-text
 #     (1,2) Ctrl+Shift+V   paste (terminal / paste-as-plain-text)
 #     (2,1) Enter          send
-#   Row 2 = one-press agent macros. Each key sends a SINGLE spare keysym (never a
-#     modifier chord — a chord can latch Ctrl/Alt/Shift stuck at the X level and
-#     wedge your whole desktop). A shortcut runs `macropad-say` (see install.sh).
-#     This machine has no touchpad, so XF86TouchpadToggle/On/Off (f21/f22/f23) are
-#     inert and free; if you HAVE a touchpad, pick three other spare keysyms.
-#     (0,2) f21  XF86TouchpadToggle  -> go
-#     (1,1) f22  XF86TouchpadOn      -> merge
-#     (2,0) f23  XF86TouchpadOff     -> stop
-#   Row 3 = free placeholder letters; remap as you like.
+#   Rows 2 and 3 = one-press agent macros. Each key sends a SINGLE spare keysym
+#     (never a modifier chord — a chord can latch Ctrl/Alt/Shift stuck at the X
+#     level and wedge your whole desktop). A shortcut runs `macropad-say` (see
+#     install.sh). This machine has no touchpad, so XF86TouchpadToggle/On/Off
+#     (f21/f22/f23) are inert and free; if you HAVE a touchpad, pick other spare
+#     keysyms for those three.
+#     (0,2) f21    XF86TouchpadToggle  -> go
+#     (1,1) f22    XF86TouchpadOn      -> merge
+#     (2,0) f23    XF86TouchpadOff     -> stop
+#     (0,1) <118>  SunProps            -> round   (physical row 3, col 1)
+#     The f13-f24 range was already spent: f13-f18 drive the knobs, f21-f23 the
+#     three keys above, f20 is XF86AudioMicMute (a global handler eats it), and
+#     f19/f24 have no keysym at all on a stock Xorg keymap, so nothing can bind
+#     them. Hence the raw HID code. Note the name mismatch: HID usage 0x76 (118)
+#     is "Keyboard Menu" in the USB HID spec, but Linux maps it to KEY_PROPS,
+#     which Xorg presents as the keysym SunProps.
+#   Row 3 cols 2 and 3 = free placeholder letters; remap as you like.
 #   Row 4 (physical) = utility row:
 #     (0,0) physical row 4 col 1: Shift+PrintScreen -> selection screenshot
 #     (0,4) physical row 4 col 2: Ctrl+V             -> paste
@@ -43,7 +51,7 @@ knobs: 2
 
 layers:
   - buttons:
-      - ["shift-printscreen", "b", "f21", "<72>", "ctrl-v"]
+      - ["shift-printscreen", "<118>", "f21", "<72>", "ctrl-v"]
       - ["f", "f22", "ctrl-shift-v", "enter", "j"]
       - ["f23", "enter", "m", "n", "o"]
     knobs:
