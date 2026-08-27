@@ -114,7 +114,7 @@ Why: on a standard Linux/Xorg evdev keymap, the high function keys are **not**
 plain function keys. Check yours:
 
 ```bash
-xmodmap -pke | sed -n 'p' | grep -Ei 'F1[3-9]|F2[0-4]|Launch|AudioMic|Touchpad|Props'
+xmodmap -pke | sed -n 'p' | grep -Ei 'F1[3-9]|F2[0-4]|Launch|AudioMic|Touchpad|Favorites'
 ```
 
 You'll typically find:
@@ -158,28 +158,53 @@ key             keysym               types
 row 2 left      XF86TouchpadToggle   go ahead, continue
 row 2 middle    XF86TouchpadOn       merge the pull request, please
 row 2 right     XF86TouchpadOff      stop
-row 3 left      SunProps             one more round, please
+row 3 left      XF86Favorites        one more round, please
 ```
 
 Row 2's three keysyms are touchpad keys, inert only on a machine without a
 touchpad — `install.sh` skips exactly those three when it detects one, and binds
-the rest. `SunProps` is the fourth because the `F13`–`F24` range was already
-spent: `F13`–`F18` drive the knobs, `F20` is `XF86AudioMicMute` (see the gotcha
-above), and `F19`/`F24` carry no keysym at all, so nothing can bind them. It is
-reached with the raw HID code `<118>`; Linux maps that usage to `KEY_PROPS`,
-which Xorg presents as `SunProps`.
+the rest. `XF86Favorites` is the fourth because the `F13`–`F24` range was
+already spent: `F13`–`F18` drive the knobs, `F20` is `XF86AudioMicMute` (see the
+gotcha above), and `F19`/`F24` carry no keysym at all, so nothing can bind them.
+The pad reaches it through the **named** `favorites` key (`show-keys` lists it
+under *Media keys*), which Linux maps to `KEY_BOOKMARKS`.
 
-**All four keysyms are "free" on my machine, not on yours** — that is a fact
-about a keymap and a desktop, not a property of the keys. Check before you trust
-any of them, `SunProps` included:
+### Picking a keysym — the check that actually matters
+
+**Your desktop has to be able to parse the name.** XFCE resolves a shortcut name
+through GTK. If GTK does not know that name, `xfsettingsd` never installs the key
+grab — and nothing reports an error. The shortcut appears in `xfconf`, looks
+perfectly correct, and the key does nothing at all.
+
+This is not hypothetical: this row-3 key first shipped bound to `SunProps`. The
+pad emitted it, X delivered it as keycode 138, and `xmodmap` listed it. It was
+still completely dead, because GTK maps the name `SunProps` to `VoidSymbol`.
+
+So check a candidate in this order:
 
 ```bash
-xmodmap -pke | grep -i props                              # exists? (nothing = unbindable)
-xfconf-query -c xfce4-keyboard-shortcuts -l | grep -i props   # already bound?
+# 1. Can the desktop PARSE the name? The one that would have caught the bug.
+python3 - <<'PY'
+import gi; gi.require_version('Gdk', '3.0')
+from gi.repository import Gdk
+name = 'XF86Favorites'
+print(name, 'OK' if Gdk.keyval_from_name(name) != Gdk.KEY_VoidSymbol else 'UNUSABLE')
+PY
+
+# 2. Does it exist in the X keymap?          (nothing = unbindable)
+xmodmap -pke | grep -i favorites
+
+# 3. Is anything already using it?
+xfconf-query -c xfce4-keyboard-shortcuts -l | grep -i favorites
 ```
 
-If a keysym is missing from the first command, nothing can bind it — pick
-another. If it shows up in the second, it already does something else.
+Checks 2 and 3 both passed for `SunProps` while the key was dead, so neither is
+sufficient on its own. `tests/keysym-names.test.sh` runs check 1 over every
+keysym in `install.sh`; `install.sh` runs it too and refuses to bind a name GTK
+cannot parse.
+
+**And all four keysyms are "free" on my machine, not on yours** — that is a fact
+about one keymap and one desktop, not a property of the keys.
 
 The device can only emit HID key codes, so it can't type a whole phrase. Instead
 each key sends a **single spare keysym**, a desktop shortcut catches it, and
@@ -195,9 +220,9 @@ copy) — no device reflash needed.
 > and never misbehaved. Because this machine has no touchpad,
 > `XF86TouchpadToggle`/`On`/`Off` are inert, unbound keysyms that make good macro
 > triggers; on a laptop, pick your own spare keys for those three (`install.sh`
-> skips them there, and binds the rest). Give `SunProps` the same scrutiny — it
-> is unbound *here*, which is not a promise about your machine. Verify all four
-> with the two commands above.
+> skips them there, and binds the rest). Give `XF86Favorites` the same scrutiny —
+> it is unbound *here*, which is not a promise about your machine. Verify all four
+> with the three checks above.
 >
 > One timing note: `macropad-say` sleeps 200 ms before typing, or the shortcut
 > fires before the key settles and `xdotool` drops the first characters.
@@ -227,11 +252,17 @@ List valid key names with `ch57x-keyboard-tool show-keys`.
 
 ```bash
 tests/touchpad-guard.test.sh
+tests/keysym-names.test.sh
 ```
 
-It stubs `xinput` and `xfconf-query` to check the macro-binding guard both ways —
-with a touchpad only the three `XF86Touchpad*` keysyms are skipped, without one
-all four bind — without writing to your real desktop configuration.
+The first stubs `xinput` and `xfconf-query` to check the macro-binding guard both
+ways — with a touchpad only the three `XF86Touchpad*` keysyms are skipped, without
+one all four bind — without writing to your real desktop configuration.
+
+The second asserts every keysym in `install.sh` is a name GTK can resolve, which
+is what stops a shortcut from being installed and silently never firing. It needs
+`python3-gi`, and it **fails** rather than skipping when that is missing, because
+quietly passing is the exact failure it exists to prevent.
 
 **The device can't be read back** — `ch57x-keyboard-tool` only writes. Every
 upload replaces the whole map. Keep `macropad.yaml` as your source of truth.
@@ -245,7 +276,7 @@ step 3 (binding keysyms) and step 4 (silencing the panel popup) are XFCE-specifi
 
 - **GNOME/KDE/etc.:** bind each knob keysym in the table above to the matching
   `~/.local/bin/macropad-audio …` command, and the macro keysyms
-  (`XF86TouchpadToggle`/`On`/`Off` and `SunProps`, or your own spare keys) to
+  (`XF86TouchpadToggle`/`On`/`Off` and `XF86Favorites`, or your own spare keys) to
   `~/.local/bin/macropad-say go|merge|stop|round`, using your desktop's keyboard
   settings. Disable your panel's own volume OSD if it duplicates the notification.
 - **Wayland:** `wpctl` and `notify-send` work the same; use your compositor's

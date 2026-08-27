@@ -10,7 +10,7 @@
 # are extracted from install.sh and executed, rather than re-implemented here — a
 # copy would drift from the real thing and keep passing while install.sh broke.
 # That applies to the data as much as to the logic: if the test declared its own
-# MACROS, dropping SunProps from the real array would not fail anything.
+# MACROS, dropping XF86Favorites from the real array would not fail anything.
 #
 # Run:  tests/touchpad-guard.test.sh
 set -euo pipefail
@@ -40,10 +40,10 @@ TOUCHPAD_KEYSYMS=""
 # shellcheck source=/dev/null
 source "$WORK/macros.sh"
 
-[ "${MACROS[SunProps]+set}" = set ] || fail "install.sh no longer maps SunProps — the row-3 macro key is gone"
-[ "${MACROS[SunProps]}" = "round" ] || fail "install.sh maps SunProps to '${MACROS[SunProps]}', expected 'round'"
+[ "${MACROS[XF86Favorites]+set}" = set ] || fail "install.sh no longer maps XF86Favorites — the row-3 macro key is gone"
+[ "${MACROS[XF86Favorites]}" = "round" ] || fail "install.sh maps XF86Favorites to '${MACROS[XF86Favorites]}', expected 'round'"
 case "$TOUCHPAD_KEYSYMS" in
-  *" SunProps "*) fail "SunProps is listed in TOUCHPAD_KEYSYMS — it is not a touchpad key and would be skipped on every laptop" ;;
+  *" XF86Favorites "*) fail "XF86Favorites is listed in TOUCHPAD_KEYSYMS — it is not a touchpad key and would be skipped on every laptop" ;;
 esac
 for ks in XF86TouchpadToggle XF86TouchpadOn XF86TouchpadOff; do
   [ "${MACROS[$ks]+set}" = set ] || fail "install.sh no longer maps $ks"
@@ -52,7 +52,7 @@ for ks in XF86TouchpadToggle XF86TouchpadOn XF86TouchpadOff; do
     *) fail "$ks is missing from TOUCHPAD_KEYSYMS — it would be bound on a laptop and fight the touchpad" ;;
   esac
 done
-pass "install.sh's macro table: SunProps -> round, and only the XF86Touchpad* keys marked skippable"
+pass "install.sh's macro table: XF86Favorites -> round, and only the XF86Touchpad* keys marked skippable"
 
 # --- stubs -------------------------------------------------------------------
 mkdir -p "$WORK/bin"
@@ -95,7 +95,7 @@ run_guard() { # $1: yes|no  -> prints bound keysyms, one per line; stderr = warn
 }
 
 # --- case 1: a machine WITH a touchpad ---------------------------------------
-# Only the three touchpad keysyms are skipped. SunProps has nothing to do with a
+# Only the three touchpad keysyms are skipped. XF86Favorites has nothing to do with a
 # touchpad, so it must still be bound — the bug this guard was rewritten to fix.
 expected_on_laptop="$(for ks in "${!MACROS[@]}"; do
   case "$TOUCHPAD_KEYSYMS" in *" $ks "*) continue ;; esac
@@ -103,7 +103,7 @@ expected_on_laptop="$(for ks in "${!MACROS[@]}"; do
 done | sort)"
 got="$(run_guard yes)"
 [ "$got" = "$expected_on_laptop" ] || fail "touchpad present: expected [$(echo "$expected_on_laptop" | tr '\n' ' ')], got: [$(echo "$got" | tr '\n' ' ')]"
-pass "touchpad present — SunProps bound, the three XF86Touchpad* keys skipped"
+pass "touchpad present — XF86Favorites bound, the three XF86Touchpad* keys skipped"
 
 warning="$(cat "$WORK/stderr.yes.log")"
 case "$warning" in
@@ -118,9 +118,9 @@ case "$warning" in
   *) fail "warning has a stray space before the keysym list: $warning" ;;
 esac
 case "$warning" in
-  *"SunProps"*) fail "warning wrongly names SunProps as skipped: $warning" ;;
+  *"XF86Favorites"*) fail "warning wrongly names XF86Favorites as skipped: $warning" ;;
 esac
-pass "warning names only the three skipped keysyms, and not SunProps"
+pass "warning names only the three skipped keysyms, and not XF86Favorites"
 
 # --- case 2: a machine WITHOUT a touchpad ------------------------------------
 # Everything binds. This also covers the `set -euo pipefail` trap: with no
