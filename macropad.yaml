@@ -32,13 +32,20 @@
 #     (0,2) f21    XF86TouchpadToggle  -> go
 #     (1,1) f22    XF86TouchpadOn      -> merge
 #     (2,0) f23    XF86TouchpadOff     -> stop
-#     (0,1) <118>  SunProps            -> round   (physical row 3, col 1)
-#     The f13-f24 range was already spent: f13-f18 drive the knobs, f21-f23 the
-#     three keys above, f20 is XF86AudioMicMute (a global handler eats it), and
-#     f19/f24 have no keysym at all on a stock Xorg keymap, so nothing can bind
-#     them. Hence the raw HID code. Note the name mismatch: HID usage 0x76 (118)
-#     is "Keyboard Menu" in the USB HID spec, but Linux maps it to KEY_PROPS,
-#     which Xorg presents as the keysym SunProps.
+#     (0,1) favorites  XF86Favorites     -> round   (physical row 3, col 1)
+#     PICKING A KEYSYM — the rule that cost a merged-and-broken key: the name has
+#     to be one your DESKTOP can parse, not merely a keysym that exists in the X
+#     keymap. XFCE resolves a shortcut name through GTK, so if
+#     Gdk.keyval_from_name(name) returns VoidSymbol, xfsettingsd silently never
+#     installs the grab: the shortcut sits in xfconf looking correct and the key
+#     does nothing, with no error anywhere. The first version of this key used
+#     the raw HID code <118> (KEY_PROPS -> keysym SunProps). The pad emitted it
+#     and X delivered it, but GTK does not know the name "SunProps", so it never
+#     worked. tests/keysym-names.test.sh now guards this.
+#     f13-f24 were already spent: f13-f18 drive the knobs, f21-f23 the three keys
+#     above, f20 is XF86AudioMicMute (a global handler eats it), f19/f24 have no
+#     keysym at all. `favorites` is a NAMED media key in ch57x-keyboard-tool, and
+#     XF86Favorites is a name GTK knows.
 #   Row 3 cols 2 and 3 = free placeholder letters; remap as you like.
 #   Row 4 (physical) = utility row:
 #     (0,0) physical row 4 col 1: Shift+PrintScreen -> selection screenshot
@@ -51,7 +58,7 @@ knobs: 2
 
 layers:
   - buttons:
-      - ["shift-printscreen", "<118>", "f21", "<72>", "ctrl-v"]
+      - ["shift-printscreen", "favorites", "f21", "<72>", "ctrl-v"]
       - ["f", "f22", "ctrl-shift-v", "enter", "j"]
       - ["f23", "enter", "m", "n", "o"]
     knobs:

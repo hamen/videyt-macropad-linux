@@ -20,6 +20,8 @@ CONFIG="${1:-$REPO_DIR/macropad.yaml}"
 # The bracketed f-key is the HID code the device sends (see macropad.yaml); on a
 # standard Linux/Xorg evdev keymap it produces the keysym on the left. Verify on
 # your system with:  xmodmap -pke | grep -Ei 'XF86Tools|XF86Launch'
+# >>> SHORTCUT_TABLE_BEGIN
+# Extracted verbatim by tests/keysym-names.test.sh. Keep both markers.
 declare -A SHORTCUTS=(
   [XF86Tools]="mic-up"      # f13
   [XF86Launch5]="mic-down"  # f14
@@ -28,6 +30,7 @@ declare -A SHORTCUTS=(
   [XF86Launch8]="spk-down"  # f17
   [XF86Launch9]="spk-up"    # f18
 )
+# >>> SHORTCUT_TABLE_END
 
 # Single spare keysym -> macropad-say phrase (row 2, plus the first key of row 3).
 # Use a plain keysym, NEVER a modifier chord: a chord (Ctrl+Alt+Shift+key) can
@@ -37,12 +40,23 @@ declare -A SHORTCUTS=(
 # if you have a touchpad, pick other spare, side-effect-free keysyms for those
 # three (the loop below skips them on a laptop, so nothing fights your touchpad).
 #
-# SunProps is the fourth macro key. It is what the f13-f24 range had left: f13-f18
-# drive the knobs, f21-f23 are the three above, f20 is XF86AudioMicMute (a global
-# handler eats it), and f19/f24 carry no keysym on a stock Xorg keymap, so nothing
-# can bind them. Verify SunProps is free on YOUR machine before trusting it:
-#   xmodmap -pke | grep -i props
-#   xfconf-query -c xfce4-keyboard-shortcuts -l | grep -i props
+# XF86Favorites is the fourth macro key, reached by the NAMED `favorites` key in
+# ch57x-keyboard-tool. f13-f24 were already spent: f13-f18 drive the knobs,
+# f21-f23 are the three above, f20 is XF86AudioMicMute (a global handler eats it),
+# and f19/f24 carry no keysym on a stock Xorg keymap.
+#
+# CHECK A CANDIDATE KEYSYM IN THIS ORDER. The first check is the one that matters,
+# and it is the one this project learned the hard way — a key shipped completely
+# dead because it passed the other two:
+#   1. Your desktop must be able to PARSE THE NAME. XFCE resolves a shortcut name
+#      through GTK; if GTK does not know it, xfsettingsd never installs the grab.
+#      No error — the shortcut sits in xfconf looking correct and does nothing.
+#      tests/keysym-names.test.sh runs this check for every keysym below.
+#   2. It must exist in the X keymap:  xmodmap -pke | grep -i favorites
+#   3. Nothing else may claim it:
+#        xfconf-query -c xfce4-keyboard-shortcuts -l | grep -i favorites
+# Checks 2 and 3 BOTH passed for the previous keysym (SunProps) while the key was
+# dead. Presence in the X keymap does not imply GTK knows the name.
 # >>> MACRO_TABLE_BEGIN
 # Everything down to the closing marker is extracted verbatim and executed by
 # tests/touchpad-guard.test.sh, so the test asserts against THESE declarations
@@ -51,7 +65,7 @@ declare -A MACROS=(
   [XF86TouchpadToggle]="go"
   [XF86TouchpadOn]="merge"
   [XF86TouchpadOff]="stop"
-  [SunProps]="round"
+  [XF86Favorites]="round"
 )
 
 # Keysyms in MACROS that are touchpad keys, and so must not be bound on a machine
@@ -59,8 +73,38 @@ declare -A MACROS=(
 TOUCHPAD_KEYSYMS=" XF86TouchpadToggle XF86TouchpadOn XF86TouchpadOff "
 # >>> MACRO_TABLE_END
 
+# Keysyms this project used to bind and no longer does. install.sh only ever wrote
+# shortcuts, so a rename left the old property behind as a dead entry forever.
+# Removed after a successful upload, and only when the value still looks like one
+# this installer wrote — a binding you made yourself on the same keysym is kept.
+RETIRED_KEYSYMS="SunProps"
+
 log() { printf '\033[1;34m==>\033[0m %s\n' "$*"; }
 warn() { printf '\033[1;33m[!]\033[0m %s\n' "$*"; }
+
+# 0. Refuse to bind a keysym the desktop cannot parse ------------------------
+# The failure this prevents is silent. XFCE resolves a shortcut name through GTK,
+# and an unknown name means xfsettingsd never installs the grab: the property is
+# written, looks correct, and the key does nothing. This project shipped exactly
+# that. Exit non-zero rather than warn and continue — "warned, exited 0, key
+# dead" is the bug, not the fix.
+# Prints the unparseable names, or a line starting with SKIP if it could not check.
+unparseable_keysyms() {
+  command -v python3 >/dev/null 2>&1 || { echo "SKIP python3 not found"; return 0; }
+  python3 - "$@" <<'PYEOF' 2>/dev/null || echo "SKIP python3-gi (GObject introspection) not available"
+import sys
+try:
+    import gi
+    try:
+        gi.require_version("Gdk", "3.0")   # xfsettingsd is GTK3
+    except ValueError:
+        gi.require_version("Gdk", "4.0")
+    from gi.repository import Gdk
+except Exception:
+    sys.exit(1)
+print(" ".join(n for n in sys.argv[1:] if Gdk.keyval_from_name(n) == Gdk.KEY_VoidSymbol))
+PYEOF
+}
 
 # 1. ch57x-keyboard-tool ----------------------------------------------------
 if ! command -v ch57x-keyboard-tool >/dev/null 2>&1; then
@@ -79,6 +123,24 @@ case ":$PATH:" in *":$BIN_DIR:"*) : ;; *) warn "$BIN_DIR is not on your PATH —
 command -v xdotool >/dev/null 2>&1 || warn "xdotool not found — the agent macros (macropad-say) need it on X11/Xwayland; on native Wayland use wtype/ydotool"
 
 # 3. Desktop shortcuts (XFCE) ----------------------------------------------
+# >>> KEYSYM_GUARD_BEGIN
+# Extracted verbatim by tests/keysym-names.test.sh. Keep both markers.
+bad_keysyms="$(unparseable_keysyms "${!MACROS[@]}" "${!SHORTCUTS[@]}")"
+case "$bad_keysyms" in
+  SKIP*)
+    warn "Cannot check keysym names (${bad_keysyms#SKIP }). If a shortcut silently never fires, this is the first thing to check — install python3-gi and re-run."
+    ;;
+  "") : ;;
+  *)
+    warn "These keysyms are not names your desktop can parse: ${bad_keysyms# }"
+    warn "GTK maps them to VoidSymbol, so xfsettingsd would never install the grab: the shortcut"
+    warn "would appear in xfconf and the key would silently do nothing. Pick a name GTK knows"
+    warn "(see the notes above MACROS in this script) and re-run. Nothing was bound."
+    exit 1
+    ;;
+esac
+# >>> KEYSYM_GUARD_END
+
 if command -v xfconf-query >/dev/null 2>&1; then
   log "Binding knob keysyms to macropad-audio (XFCE)…"
   for ks in "${!SHORTCUTS[@]}"; do
@@ -151,5 +213,33 @@ log "Validating config"
 "$TOOL" validate < "$CONFIG"
 log "Uploading to the macropad (needs root for USB access)…"
 sudo "$TOOL" upload < "$CONFIG"
+
+# 6. Drop shortcuts this project used to write and no longer does -----------
+# Deliberately AFTER the upload: if the sudo prompt above is cancelled, the device
+# still sends the old code, so removing its binding here would leave that key dead
+# for a reason the user never asked for. Only values shaped like one this
+# installer wrote are removed, so your own binding on the same keysym survives.
+# >>> RETIRED_PRUNE_BEGIN
+# Extracted verbatim by tests/prune.test.sh. Keep both markers.
+if command -v xfconf-query >/dev/null 2>&1; then
+  for ks in $RETIRED_KEYSYMS; do
+    old="$(xfconf-query -c xfce4-keyboard-shortcuts -p "/commands/custom/$ks" 2>/dev/null)" || continue
+    # Match the WHOLE value, not a substring. This deletes user configuration, so
+    # anything less exact is a bug: a loose match would also eat a command of
+    # their own that merely mentions macropad-say, such as
+    #   notify-send hi; "/tmp/macropad-say" round
+    # The shape this installer writes, and the only shape removed, is exactly:
+    #   "<path>/macropad-say" <single-lowercase-word>
+    # with exactly one literal space — not [[:space:]], which would also accept a
+    # tab or newline this installer never writes.
+    if [[ "$old" =~ ^\"[^\"]*/macropad-say\"\ [a-z]+$ ]]; then
+      xfconf-query -c xfce4-keyboard-shortcuts -p "/commands/custom/$ks" -r 2>/dev/null \
+        && log "Removed the retired shortcut /commands/custom/$ks"
+    else
+      warn "Left /commands/custom/$ks alone — it does not look like one this installer wrote: $old"
+    fi
+  done
+fi
+# >>> RETIRED_PRUNE_END
 
 log "Done. Turn a knob for a labelled notification; press a macro key (row 2, or row 3 col 1) to type a phrase."
