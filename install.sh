@@ -130,7 +130,7 @@ case "$bad_keysyms" in
     ;;
   "") : ;;
   *)
-    warn "These keysyms are not names your desktop can parse:$bad_keysyms"
+    warn "These keysyms are not names your desktop can parse: ${bad_keysyms# }"
     warn "GTK maps them to VoidSymbol, so xfsettingsd would never install the grab: the shortcut"
     warn "would appear in xfconf and the key would silently do nothing. Pick a name GTK knows"
     warn "(see the notes above MACROS in this script) and re-run. Nothing was bound."
@@ -216,19 +216,25 @@ sudo "$TOOL" upload < "$CONFIG"
 # still sends the old code, so removing its binding here would leave that key dead
 # for a reason the user never asked for. Only values shaped like one this
 # installer wrote are removed, so your own binding on the same keysym survives.
+# >>> RETIRED_PRUNE_BEGIN
+# Extracted verbatim by tests/prune.test.sh. Keep both markers.
 if command -v xfconf-query >/dev/null 2>&1; then
   for ks in $RETIRED_KEYSYMS; do
     old="$(xfconf-query -c xfce4-keyboard-shortcuts -p "/commands/custom/$ks" 2>/dev/null)" || continue
-    case "$old" in
-      *"/macropad-say\" "[a-z]*)
-        xfconf-query -c xfce4-keyboard-shortcuts -p "/commands/custom/$ks" -r 2>/dev/null \
-          && log "Removed the retired shortcut /commands/custom/$ks"
-        ;;
-      *)
-        warn "Left /commands/custom/$ks alone — it does not look like one this installer wrote: $old"
-        ;;
-    esac
+    # Match the WHOLE value, not a substring. This deletes user configuration, so
+    # anything less exact is a bug: a loose match would also eat a command of
+    # their own that merely mentions macropad-say, such as
+    #   notify-send hi; "/tmp/macropad-say" round
+    # The shape this installer writes, and the only shape removed, is exactly:
+    #   "<path>/macropad-say" <single-lowercase-word>
+    if [[ "$old" =~ ^\"[^\"]*/macropad-say\"[[:space:]][a-z]+$ ]]; then
+      xfconf-query -c xfce4-keyboard-shortcuts -p "/commands/custom/$ks" -r 2>/dev/null \
+        && log "Removed the retired shortcut /commands/custom/$ks"
+    else
+      warn "Left /commands/custom/$ks alone — it does not look like one this installer wrote: $old"
+    fi
   done
 fi
+# >>> RETIRED_PRUNE_END
 
 log "Done. Turn a knob for a labelled notification; press a macro key (row 2, or row 3 col 1) to type a phrase."

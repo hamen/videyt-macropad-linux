@@ -253,6 +253,7 @@ List valid key names with `ch57x-keyboard-tool show-keys`.
 ```bash
 tests/touchpad-guard.test.sh
 tests/keysym-names.test.sh
+tests/prune.test.sh
 ```
 
 The first stubs `xinput` and `xfconf-query` to check the macro-binding guard both
@@ -263,6 +264,11 @@ The second asserts every keysym in `install.sh` is a name GTK can resolve, which
 is what stops a shortcut from being installed and silently never firing. It needs
 `python3-gi`, and it **fails** rather than skipping when that is missing, because
 quietly passing is the exact failure it exists to prevent.
+
+The third covers the retired-shortcut cleanup. That code deletes desktop
+configuration, so it checks the exact cases that matter: a value this installer
+wrote is removed, a command of your own on the same keysym is kept, and a missing
+property is a silent no-op.
 
 **The device can't be read back** — `ch57x-keyboard-tool` only writes. Every
 upload replaces the whole map. Keep `macropad.yaml` as your source of truth.
