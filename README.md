@@ -209,6 +209,16 @@ List valid key names with `ch57x-keyboard-tool show-keys`.
 **Change the volume step or notification look:** edit `bin/macropad-audio`
 (the `5%+` / `5%-` steps and the `notify-send` line) and re-run `./install.sh`.
 
+**Run the tests after touching `install.sh`:**
+
+```bash
+tests/touchpad-guard.test.sh
+```
+
+It stubs `xinput` and `xfconf-query` to check the macro-binding guard both ways —
+with a touchpad only the three `XF86Touchpad*` keysyms are skipped, without one
+all four bind — without writing to your real desktop configuration.
+
 **The device can't be read back** — `ch57x-keyboard-tool` only writes. Every
 upload replaces the whole map. Keep `macropad.yaml` as your source of truth.
 

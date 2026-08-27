@@ -86,6 +86,9 @@ if command -v xfconf-query >/dev/null 2>&1; then
     printf '    %-14s -> %s\n' "$ks" "${SHORTCUTS[$ks]}"
   done
 
+  # >>> BIND_MACROS_BEGIN
+  # Everything down to the closing marker is extracted verbatim and executed by
+  # tests/touchpad-guard.test.sh. Keep both markers, each on its own line.
   # The default macro keysyms (XF86TouchpadToggle/On/Off) are inert only on a
   # machine with no touchpad. On a laptop they would fight the touchpad, so those
   # three are skipped there — but only those three: every other macro key binds
@@ -101,7 +104,7 @@ if command -v xfconf-query >/dev/null 2>&1; then
   skipped=""
   for ks in "${!MACROS[@]}"; do
     if [ "$has_touchpad" = true ] && [[ "$TOUCHPAD_KEYSYMS" == *" $ks "* ]]; then
-      skipped="$skipped $ks"
+      skipped="${skipped:+$skipped }$ks"
       continue
     fi
     if [ "$bound" -eq 0 ]; then
@@ -117,8 +120,9 @@ if command -v xfconf-query >/dev/null 2>&1; then
     bound=$((bound + 1))
   done
   if [ -n "$skipped" ]; then
-    warn "Touchpad detected — skipped these touchpad keysyms:$skipped. The other macro keys were bound. Give those phrases your own spare keysyms in MACROS (install.sh) and re-run."
+    warn "Touchpad detected — skipped these touchpad keysyms: $skipped. The other macro keys were bound. Give those phrases your own spare keysyms in MACROS (install.sh) and re-run."
   fi
+  # >>> BIND_MACROS_END
 
   # 4. Silence the panel's own volume OSD so it doesn't duplicate ours -------
   plugin=""
