@@ -43,6 +43,10 @@ declare -A SHORTCUTS=(
 # can bind them. Verify SunProps is free on YOUR machine before trusting it:
 #   xmodmap -pke | grep -i props
 #   xfconf-query -c xfce4-keyboard-shortcuts -l | grep -i props
+# >>> MACRO_TABLE_BEGIN
+# Everything down to the closing marker is extracted verbatim and executed by
+# tests/touchpad-guard.test.sh, so the test asserts against THESE declarations
+# rather than a copy of them. Keep both markers, each on its own line.
 declare -A MACROS=(
   [XF86TouchpadToggle]="go"
   [XF86TouchpadOn]="merge"
@@ -53,6 +57,7 @@ declare -A MACROS=(
 # Keysyms in MACROS that are touchpad keys, and so must not be bound on a machine
 # that actually has a touchpad. Everything else in MACROS binds either way.
 TOUCHPAD_KEYSYMS=" XF86TouchpadToggle XF86TouchpadOn XF86TouchpadOff "
+# >>> MACRO_TABLE_END
 
 log() { printf '\033[1;34m==>\033[0m %s\n' "$*"; }
 warn() { printf '\033[1;33m[!]\033[0m %s\n' "$*"; }
