@@ -199,9 +199,12 @@ xfconf-query -c xfce4-keyboard-shortcuts -l | grep -i favorites
 ```
 
 Checks 2 and 3 both passed for `SunProps` while the key was dead, so neither is
-sufficient on its own. `tests/keysym-names.test.sh` runs check 1 over every
-keysym in `install.sh`; `install.sh` runs it too and refuses to bind a name GTK
-cannot parse.
+sufficient on its own. `tests/keysym-names.test.sh` runs check 1 over every keysym
+in `install.sh`. `install.sh` runs it too and refuses to bind a name GTK cannot
+parse — **but only when the check can actually run**: it needs `python3` with
+GObject introspection, and without it the install warns that it could not check
+and carries on. If a shortcut of yours silently never fires, that warning is the
+first thing to go back and read.
 
 **And all four keysyms are "free" on my machine, not on yours** — that is a fact
 about one keymap and one desktop, not a property of the keys.

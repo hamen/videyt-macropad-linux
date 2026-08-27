@@ -123,6 +123,8 @@ case ":$PATH:" in *":$BIN_DIR:"*) : ;; *) warn "$BIN_DIR is not on your PATH —
 command -v xdotool >/dev/null 2>&1 || warn "xdotool not found — the agent macros (macropad-say) need it on X11/Xwayland; on native Wayland use wtype/ydotool"
 
 # 3. Desktop shortcuts (XFCE) ----------------------------------------------
+# >>> KEYSYM_GUARD_BEGIN
+# Extracted verbatim by tests/keysym-names.test.sh. Keep both markers.
 bad_keysyms="$(unparseable_keysyms "${!MACROS[@]}" "${!SHORTCUTS[@]}")"
 case "$bad_keysyms" in
   SKIP*)
@@ -137,6 +139,7 @@ case "$bad_keysyms" in
     exit 1
     ;;
 esac
+# >>> KEYSYM_GUARD_END
 
 if command -v xfconf-query >/dev/null 2>&1; then
   log "Binding knob keysyms to macropad-audio (XFCE)…"
@@ -227,7 +230,9 @@ if command -v xfconf-query >/dev/null 2>&1; then
     #   notify-send hi; "/tmp/macropad-say" round
     # The shape this installer writes, and the only shape removed, is exactly:
     #   "<path>/macropad-say" <single-lowercase-word>
-    if [[ "$old" =~ ^\"[^\"]*/macropad-say\"[[:space:]][a-z]+$ ]]; then
+    # with exactly one literal space — not [[:space:]], which would also accept a
+    # tab or newline this installer never writes.
+    if [[ "$old" =~ ^\"[^\"]*/macropad-say\"\ [a-z]+$ ]]; then
       xfconf-query -c xfce4-keyboard-shortcuts -p "/commands/custom/$ks" -r 2>/dev/null \
         && log "Removed the retired shortcut /commands/custom/$ks"
     else

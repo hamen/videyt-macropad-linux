@@ -78,6 +78,20 @@ run_prune SunProps
 exists SunProps || fail "case 2b: a value with trailing commands was deleted — the match is not anchored"
 pass "value with trailing text is kept (match is anchored at both ends)"
 
+# --- case 2c: a tab or newline where the installer writes one space -> kept ---
+# The installer writes exactly one literal space. A pattern of [[:space:]] would
+# also accept these, and then delete a value it never wrote.
+rm -rf "$WORK/store"; seed SunProps '"/home/ivan/.local/bin/macropad-say"	round'
+run_prune SunProps
+exists SunProps || fail "case 2c: a TAB-separated value was deleted — the separator must be one literal space"
+pass "tab instead of a space is kept"
+
+rm -rf "$WORK/store"; seed SunProps '"/home/ivan/.local/bin/macropad-say"
+round'
+run_prune SunProps
+exists SunProps || fail "case 2c: a NEWLINE-separated value was deleted — the separator must be one literal space"
+pass "newline instead of a space is kept"
+
 # --- case 3: the property does not exist -> silent no-op ---------------------
 rm -rf "$WORK/store"; mkdir -p "$WORK/store"
 run_prune SunProps
