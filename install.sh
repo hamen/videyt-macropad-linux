@@ -32,7 +32,8 @@ declare -A SHORTCUTS=(
 )
 # >>> SHORTCUT_TABLE_END
 
-# Single spare keysym -> macropad-say phrase (row 2, plus the first key of row 3).
+# Single spare keysym -> macropad-say phrase (row 2, plus the first two keys of
+# row 3).
 # Use a plain keysym, NEVER a modifier chord: a chord (Ctrl+Alt+Shift+key) can
 # latch the modifiers stuck at the X level and wedge the whole desktop.
 #
@@ -40,8 +41,8 @@ declare -A SHORTCUTS=(
 # if you have a touchpad, pick other spare, side-effect-free keysyms for those
 # three (the loop below skips them on a laptop, so nothing fights your touchpad).
 #
-# XF86Favorites is the fourth macro key, reached by the NAMED `favorites` key in
-# ch57x-keyboard-tool. f13-f24 were already spent: f13-f18 drive the knobs,
+# XF86Favorites and XF86Calculator are the row-3 macro keys, reached by the NAMED
+# `favorites` and `calculator` keys in ch57x-keyboard-tool. f13-f24 were already spent: f13-f18 drive the knobs,
 # f21-f23 are the three above, f20 is XF86AudioMicMute (a global handler eats it),
 # and f19/f24 carry no keysym on a stock Xorg keymap.
 #
@@ -66,6 +67,7 @@ declare -A MACROS=(
   [XF86TouchpadOn]="merge"
   [XF86TouchpadOff]="stop"
   [XF86Favorites]="round"
+  [XF86Calculator]="compact"
 )
 
 # Keysyms in MACROS that are touchpad keys, and so must not be bound on a machine
@@ -242,4 +244,4 @@ if command -v xfconf-query >/dev/null 2>&1; then
 fi
 # >>> RETIRED_PRUNE_END
 
-log "Done. Turn a knob for a labelled notification; press a macro key (row 2, or row 3 col 1) to type a phrase."
+log "Done. Turn a knob for a labelled notification; press a macro key (row 2, or row 3 cols 1-2) to type a phrase."
