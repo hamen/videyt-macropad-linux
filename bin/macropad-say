@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # macropad-say <name> — types a canned phrase where the cursor is.
 # Bound to single spare keysyms the macropad's macro keys emit — row 2, and the
-# first key of row 3 (see macropad.yaml). No modifiers are involved, so nothing
+# first two keys of row 3 (see macropad.yaml). No modifiers are involved, so nothing
 # can latch/stick.
 #
 # Requires xdotool (X11 / Xwayland). On native Wayland, swap it for wtype/ydotool.
@@ -15,7 +15,8 @@ case "${1:-}" in
   merge) text="merge the pull request, please" ;;
   stop)  text="stop" ;;
   round) text="one more round, please" ;;
-  *) echo "usage: macropad-say go|merge|stop|round" >&2; exit 2 ;;
+  compact) text="/compact" ;;
+  *) echo "usage: macropad-say go|merge|stop|round|compact" >&2; exit 2 ;;
 esac
 
 command -v xdotool >/dev/null 2>&1 || { echo "macropad-say: xdotool not found (needed to type)" >&2; exit 1; }

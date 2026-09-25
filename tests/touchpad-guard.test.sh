@@ -10,7 +10,8 @@
 # are extracted from install.sh and executed, rather than re-implemented here — a
 # copy would drift from the real thing and keep passing while install.sh broke.
 # That applies to the data as much as to the logic: if the test declared its own
-# MACROS, dropping XF86Favorites from the real array would not fail anything.
+# MACROS, dropping XF86Favorites or XF86Calculator from the real array would not
+# fail anything.
 #
 # Run:  tests/touchpad-guard.test.sh
 set -euo pipefail
@@ -32,19 +33,22 @@ awk '/MACRO_TABLE_BEGIN/{f=1;next} /MACRO_TABLE_END/{f=0} f' "$INSTALL" > "$WORK
 [ -s "$WORK/macros.sh" ] || fail "could not extract the macro table from install.sh — are the MACRO_TABLE markers still there?"
 
 # --- the table must actually describe what this repo ships -------------------
-# Read the real declarations here too, so a change to install.sh that removes the
-# fourth macro key, or files it under the touchpad skips, fails loudly instead of
+# Read the real declarations here too, so a change to install.sh that removes a
+# row-3 macro key, or files it under the touchpad skips, fails loudly instead of
 # quietly reducing the test to the three keys it started with.
 declare -A MACROS=()
 TOUCHPAD_KEYSYMS=""
 # shellcheck source=/dev/null
 source "$WORK/macros.sh"
 
-[ "${MACROS[XF86Favorites]+set}" = set ] || fail "install.sh no longer maps XF86Favorites — the row-3 macro key is gone"
-[ "${MACROS[XF86Favorites]}" = "round" ] || fail "install.sh maps XF86Favorites to '${MACROS[XF86Favorites]}', expected 'round'"
-case "$TOUCHPAD_KEYSYMS" in
-  *" XF86Favorites "*) fail "XF86Favorites is listed in TOUCHPAD_KEYSYMS — it is not a touchpad key and would be skipped on every laptop" ;;
-esac
+for pair in XF86Favorites:round XF86Calculator:compact; do
+  ks="${pair%%:*}" phrase="${pair#*:}"
+  [ "${MACROS[$ks]+set}" = set ] || fail "install.sh no longer maps $ks — a row-3 macro key is gone"
+  [ "${MACROS[$ks]}" = "$phrase" ] || fail "install.sh maps $ks to '${MACROS[$ks]}', expected '$phrase'"
+  case "$TOUCHPAD_KEYSYMS" in
+    *" $ks "*) fail "$ks is listed in TOUCHPAD_KEYSYMS — it is not a touchpad key and would be skipped on every laptop" ;;
+  esac
+done
 for ks in XF86TouchpadToggle XF86TouchpadOn XF86TouchpadOff; do
   [ "${MACROS[$ks]+set}" = set ] || fail "install.sh no longer maps $ks"
   case "$TOUCHPAD_KEYSYMS" in
@@ -52,7 +56,7 @@ for ks in XF86TouchpadToggle XF86TouchpadOn XF86TouchpadOff; do
     *) fail "$ks is missing from TOUCHPAD_KEYSYMS — it would be bound on a laptop and fight the touchpad" ;;
   esac
 done
-pass "install.sh's macro table: XF86Favorites -> round, and only the XF86Touchpad* keys marked skippable"
+pass "install.sh's macro table: XF86Favorites -> round, XF86Calculator -> compact, and only the XF86Touchpad* keys marked skippable"
 
 # --- stubs -------------------------------------------------------------------
 mkdir -p "$WORK/bin"
@@ -95,15 +99,16 @@ run_guard() { # $1: yes|no  -> prints bound keysyms, one per line; stderr = warn
 }
 
 # --- case 1: a machine WITH a touchpad ---------------------------------------
-# Only the three touchpad keysyms are skipped. XF86Favorites has nothing to do with a
-# touchpad, so it must still be bound — the bug this guard was rewritten to fix.
+# Only the three touchpad keysyms are skipped. The row-3 keys have nothing to do
+# with a touchpad, so they must still be bound — the bug this guard was rewritten
+# to fix.
 expected_on_laptop="$(for ks in "${!MACROS[@]}"; do
   case "$TOUCHPAD_KEYSYMS" in *" $ks "*) continue ;; esac
   echo "$ks"
 done | sort)"
 got="$(run_guard yes)"
 [ "$got" = "$expected_on_laptop" ] || fail "touchpad present: expected [$(echo "$expected_on_laptop" | tr '\n' ' ')], got: [$(echo "$got" | tr '\n' ' ')]"
-pass "touchpad present — XF86Favorites bound, the three XF86Touchpad* keys skipped"
+pass "touchpad present — the row-3 keys bound, the three XF86Touchpad* keys skipped"
 
 warning="$(cat "$WORK/stderr.yes.log")"
 case "$warning" in
@@ -117,10 +122,12 @@ case "$warning" in
   *"keysyms: XF86"*) : ;;
   *) fail "warning has a stray space before the keysym list: $warning" ;;
 esac
-case "$warning" in
-  *"XF86Favorites"*) fail "warning wrongly names XF86Favorites as skipped: $warning" ;;
-esac
-pass "warning names only the three skipped keysyms, and not XF86Favorites"
+for ks in XF86Favorites XF86Calculator; do
+  case "$warning" in
+    *"$ks"*) fail "warning wrongly names $ks as skipped: $warning" ;;
+  esac
+done
+pass "warning names only the three skipped keysyms, and not the row-3 keys"
 
 # --- case 2: a machine WITHOUT a touchpad ------------------------------------
 # Everything binds. This also covers the `set -euo pipefail` trap: with no
@@ -128,8 +135,8 @@ pass "warning names only the three skipped keysyms, and not XF86Favorites"
 # would abort the script here instead of binding anything.
 got="$(run_guard no)"
 expected="$(printf '%s\n' "${!MACROS[@]}" | sort)"
-[ "$got" = "$expected" ] || fail "no touchpad: expected all four keysyms bound, got: $(echo "$got" | tr '\n' ' ')"
-pass "no touchpad — all four macro keysyms bound, no early exit under pipefail"
+[ "$got" = "$expected" ] || fail "no touchpad: expected every macro keysym bound, got: $(echo "$got" | tr '\n' ' ')"
+pass "no touchpad — every macro keysym bound, no early exit under pipefail"
 
 case "$(cat "$WORK/stderr.no.log")" in
   *"Touchpad detected"*) fail "no touchpad: warned about a touchpad anyway" ;;

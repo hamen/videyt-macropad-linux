@@ -33,6 +33,7 @@
 #     (1,1) f22    XF86TouchpadOn      -> merge
 #     (2,0) f23    XF86TouchpadOff     -> stop
 #     (0,1) favorites  XF86Favorites     -> round   (physical row 3, col 1)
+#     (1,0) calculator XF86Calculator    -> compact (physical row 3, col 2)
 #     PICKING A KEYSYM — the rule that cost a merged-and-broken key: the name has
 #     to be one your DESKTOP can parse, not merely a keysym that exists in the X
 #     keymap. XFCE resolves a shortcut name through GTK, so if
@@ -45,8 +46,11 @@
 #     f13-f24 were already spent: f13-f18 drive the knobs, f21-f23 the three keys
 #     above, f20 is XF86AudioMicMute (a global handler eats it), f19/f24 have no
 #     keysym at all. `favorites` is a NAMED media key in ch57x-keyboard-tool, and
-#     XF86Favorites is a name GTK knows.
-#   Row 3 cols 2 and 3 = free placeholder letters; remap as you like.
+#     XF86Favorites is a name GTK knows. `calculator` is the other named media
+#     key that is safe here: Linux maps it to KEY_CALC, X to XF86Calculator
+#     (keycode 148), and GTK knows that name too. (`screenlock` would lock the
+#     session; the rest are volume/playback keys a global handler already owns.)
+#   Row 3 col 3 = free placeholder letter; remap as you like.
 #   Row 4 (physical) = utility row:
 #     (0,0) physical row 4 col 1: Shift+PrintScreen -> selection screenshot
 #     (0,4) physical row 4 col 2: Ctrl+V             -> paste
@@ -59,7 +63,7 @@ knobs: 2
 layers:
   - buttons:
       - ["shift-printscreen", "favorites", "f21", "<72>", "ctrl-v"]
-      - ["f", "f22", "ctrl-shift-v", "enter", "j"]
+      - ["calculator", "f22", "ctrl-shift-v", "enter", "j"]
       - ["f23", "enter", "m", "n", "o"]
     knobs:
       # LEFT knob -> SPEAKERS  (turn = volume down/up, press = mute)
