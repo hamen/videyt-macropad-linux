@@ -144,12 +144,12 @@ handler, and bind those. That's what this repo does.
 ## The 12 keys: dictate, paste, send — and one-press agent macros
 
 The pad has 12 keys (4 rows × 3 columns). This repo's `macropad.yaml` assigns
-rows 1, 2 and 4, plus the first key of row 3; the other two row-3 keys are still
-free placeholders.
+rows 1, 2 and 4, plus the first two keys of row 3; the last row-3 key is still a
+free placeholder.
 
 - **Row 1 — dictate → paste → send:** a push-to-talk key (for a hold-to-talk
   speech-to-text), `Ctrl+Shift+V` (paste), and `Enter` (send).
-- **Rows 2 and 3 — agent macros:** four keys that type the phrases you send
+- **Rows 2 and 3 — agent macros:** five keys that type the phrases you send
   coding agents all day. `install.sh` binds them via `bin/macropad-say`:
 
 ```
@@ -159,15 +159,22 @@ row 2 left      XF86TouchpadToggle   go ahead, continue
 row 2 middle    XF86TouchpadOn       merge the pull request, please
 row 2 right     XF86TouchpadOff      stop
 row 3 left      XF86Favorites        one more round, please
+row 3 middle    XF86Calculator       /compact
 ```
+
+None of them press Enter: the phrase lands in the prompt, and you send it with the
+`Enter` key — so a stray press never runs anything on its own.
 
 Row 2's three keysyms are touchpad keys, inert only on a machine without a
 touchpad — `install.sh` skips exactly those three when it detects one, and binds
-the rest. `XF86Favorites` is the fourth because the `F13`–`F24` range was
+the rest. The two row-3 keys are named media keys because the `F13`–`F24` range was
 already spent: `F13`–`F18` drive the knobs, `F20` is `XF86AudioMicMute` (see the
 gotcha above), and `F19`/`F24` carry no keysym at all, so nothing can bind them.
-The pad reaches it through the **named** `favorites` key (`show-keys` lists it
-under *Media keys*), which Linux maps to `KEY_BOOKMARKS`.
+The pad reaches them through the **named** `favorites` and `calculator` keys
+(`show-keys` lists them under *Media keys*), which Linux maps to `KEY_BOOKMARKS`
+and `KEY_CALC`. Those are the only two safe ones in that list: `screenlock` locks
+the session, and the others are volume and playback keys a global handler already
+owns. A real keyboard with a Calculator key would now type `/compact` too.
 
 ### Picking a keysym — the check that actually matters
 
@@ -206,7 +213,7 @@ GObject introspection, and without it the install warns that it could not check
 and carries on. If a shortcut of yours silently never fires, that warning is the
 first thing to go back and read.
 
-**And all four keysyms are "free" on my machine, not on yours** — that is a fact
+**And all five keysyms are "free" on my machine, not on yours** — that is a fact
 about one keymap and one desktop, not a property of the keys.
 
 The device can only emit HID key codes, so it can't type a whole phrase. Instead
@@ -223,9 +230,9 @@ copy) — no device reflash needed.
 > and never misbehaved. Because this machine has no touchpad,
 > `XF86TouchpadToggle`/`On`/`Off` are inert, unbound keysyms that make good macro
 > triggers; on a laptop, pick your own spare keys for those three (`install.sh`
-> skips them there, and binds the rest). Give `XF86Favorites` the same scrutiny —
-> it is unbound *here*, which is not a promise about your machine. Verify all four
-> with the three checks above.
+> skips them there, and binds the rest). Give `XF86Favorites` and `XF86Calculator`
+> the same scrutiny — they are unbound *here*, which is not a promise about your
+> machine. Verify all five with the three checks above.
 >
 > One timing note: `macropad-say` sleeps 200 ms before typing, or the shortcut
 > fires before the key settles and `xdotool` drops the first characters.
@@ -251,17 +258,20 @@ List valid key names with `ch57x-keyboard-tool show-keys`.
 **Change the volume step or notification look:** edit `bin/macropad-audio`
 (the `5%+` / `5%-` steps and the `notify-send` line) and re-run `./install.sh`.
 
-**Run the tests after touching `install.sh`:**
+**Run the tests after touching `install.sh`, `bin/macropad-say` or
+`macropad.yaml`:**
 
 ```bash
 tests/touchpad-guard.test.sh
 tests/keysym-names.test.sh
 tests/prune.test.sh
+tests/macropad-say.test.sh
+tests/keymap.test.sh
 ```
 
 The first stubs `xinput` and `xfconf-query` to check the macro-binding guard both
 ways — with a touchpad only the three `XF86Touchpad*` keysyms are skipped, without
-one all four bind — without writing to your real desktop configuration.
+one every macro key binds — without writing to your real desktop configuration.
 
 The second asserts every keysym in `install.sh` is a name GTK can resolve, which
 is what stops a shortcut from being installed and silently never firing. It needs
@@ -272,6 +282,14 @@ The third covers the retired-shortcut cleanup. That code deletes desktop
 configuration, so it checks the exact cases that matter: a value this installer
 wrote is removed, a command of your own on the same keysym is kept, and a missing
 property is a silent no-op.
+
+The fourth runs `bin/macropad-say` against a fake `xdotool` that records every
+call, and compares the calls byte for byte — so a phrase that grew a trailing
+newline, or an extra `key Return`, fails instead of quietly sending the command.
+
+The fifth reads `macropad.yaml` and checks that the row-3 keys sit in the cells
+the tables above say they do. `ch57x-keyboard-tool validate` only checks that each
+name is a key it knows, so a key in the wrong cell would pass it.
 
 **The device can't be read back** — `ch57x-keyboard-tool` only writes. Every
 upload replaces the whole map. Keep `macropad.yaml` as your source of truth.
@@ -285,8 +303,9 @@ step 3 (binding keysyms) and step 4 (silencing the panel popup) are XFCE-specifi
 
 - **GNOME/KDE/etc.:** bind each knob keysym in the table above to the matching
   `~/.local/bin/macropad-audio …` command, and the macro keysyms
-  (`XF86TouchpadToggle`/`On`/`Off` and `XF86Favorites`, or your own spare keys) to
-  `~/.local/bin/macropad-say go|merge|stop|round`, using your desktop's keyboard
+  (`XF86TouchpadToggle`/`On`/`Off`, `XF86Favorites` and `XF86Calculator`, or your
+  own spare keys) to `~/.local/bin/macropad-say go|merge|stop|round|compact`,
+  using your desktop's keyboard
   settings. Disable your panel's own volume OSD if it duplicates the notification.
 - **Wayland:** `wpctl` and `notify-send` work the same; use your compositor's
   shortcut mechanism (e.g. `hyprland` binds) instead of XFCE. Note that
